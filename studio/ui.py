@@ -1841,7 +1841,9 @@ def build_app() -> gr.Blocks:
         ):
             nav_button.click(lambda target=target: switch_view(target), outputs=page_outputs, queue=False)
         dubbing_add_btn.click(add_batch, inputs=[project_select, dubbing_voice, dubbing_language, dubbing_text], outputs=[dubbing_table, dubbing_status, dubbing_text])
-        dubbing_run_btn.click(run_batch, inputs=[project_select], outputs=[dubbing_table, dubbing_status, batch_results_project, batch_results_revision, batch_result_count])
+        dubbing_run_btn.click(lambda: (gr.update(interactive=False), "⏳ 正在生成，请勿重复点击……"), outputs=[dubbing_run_btn, dubbing_status], queue=False).then(
+            run_batch, inputs=[project_select], outputs=[dubbing_table, dubbing_status, batch_results_project, batch_results_revision, batch_result_count]
+        ).then(lambda: gr.update(interactive=True), outputs=[dubbing_run_btn], queue=False)
         results_refresh_btn.click(refresh_batch_results, inputs=[project_select], outputs=[batch_results_project, batch_results_revision, results_count, batch_result_limit, batch_load_timer], queue=False)
         projects_create_btn.click(create_project, inputs=[projects_name], outputs=[project_select, library_project, upload_project, projects_table, sidebar_project_summary, projects_status], queue=False)
         projects_refresh_btn.click(refresh_projects, inputs=[project_select], outputs=[project_select, library_project, upload_project, projects_table], queue=False)
@@ -1938,9 +1940,17 @@ def build_app() -> gr.Blocks:
             queue=False,
         )
         generate_candidates_btn.click(
+            lambda: (gr.update(interactive=False), "⏳ 正在生成候选声线（会逐个生成，请勿重复点击）……"),
+            outputs=[generate_candidates_btn, candidate_status],
+            queue=False,
+        ).then(
             generate_candidates,
             inputs=[project_select, request_state, request_name, request_prompt, audition_text, request_language, candidate_count],
             outputs=[request_state, candidate_ids_state, *candidate_audio, candidate_status, request_table, worksheet_progress, activity_table],
+        ).then(
+            lambda: gr.update(interactive=True),
+            outputs=[generate_candidates_btn],
+            queue=False,
         )
         for index, button in enumerate(select_buttons):
             button.click(
@@ -2102,6 +2112,10 @@ def build_app() -> gr.Blocks:
             queue=False,
         )
         run_batch_btn.click(
+            lambda: (gr.update(interactive=False), "⏳ 正在生成，请勿重复点击……"),
+            outputs=[run_batch_btn, batch_status],
+            queue=False,
+        ).then(
             run_batch,
             inputs=[project_select],
             outputs=[
@@ -2111,7 +2125,7 @@ def build_app() -> gr.Blocks:
                 batch_results_revision,
                 batch_result_count,
             ],
-        )
+        ).then(lambda: gr.update(interactive=True), outputs=[run_batch_btn], queue=False)
         cancel_batch_btn.click(
             cancel_batch,
             inputs=[project_select],
