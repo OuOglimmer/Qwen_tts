@@ -17,6 +17,19 @@ class ModelManager:
     """Own exactly one GPU model and serialize every inference call."""
 
     @staticmethod
+    def _audio_is_usable(waveform: Any) -> bool:
+        """Reject empty/near-silent decoder results before saving them."""
+        try:
+            audio = torch.as_tensor(waveform, dtype=torch.float32)
+            if audio.numel() == 0 or not torch.isfinite(audio).all():
+                return False
+            peak = float(audio.abs().max())
+            rms = float(audio.square().mean().sqrt())
+            return peak >= 1e-3 and rms >= 1e-3
+        except (TypeError, ValueError, RuntimeError):
+            return False
+
+    @staticmethod
     def _clone_max_new_tokens(text: str) -> int:
         """Choose a bounded codec budget for one utterance.
 
@@ -117,8 +130,14 @@ class ModelManager:
                     ref_text=ref_text,
                     x_vector_only_mode=x_vector_only,
                 )
-            wavs, sample_rate = model.generate_voice_clone(**kwargs)
-            return wavs[0], sample_rate
+            last_waveform: Any = None
+            sample_rate: int | None = None
+            for _ in range(3):
+                wavs, sample_rate = model.generate_voice_clone(**kwargs)
+                last_waveform = wavs[0]
+                if self._audio_is_usable(last_waveform):
+                    return last_waveform, sample_rate
+            raise RuntimeError("模型连续生成了近静音音频，请重试")
 
     def create_prompt(
         self,
