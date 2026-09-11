@@ -29,6 +29,38 @@ class ModelManager:
         except (TypeError, ValueError, RuntimeError):
             return False
 
+    @classmethod
+    def _clone_audio_is_usable(
+        cls,
+        waveform: Any,
+        sample_rate: int,
+        text: str,
+        language: str,
+        max_new_tokens: int,
+    ) -> bool:
+        """Reject early-EOS and token-limit runaways in clone output."""
+        if not cls._audio_is_usable(waveform):
+            return False
+        try:
+            duration = float(torch.as_tensor(waveform).numel()) / float(sample_rate)
+        except (TypeError, ValueError, ZeroDivisionError):
+            return False
+
+        # The 12 Hz tokenizer produces about 12.5 frames per second. Output
+        # ending at the token budget is a truncated/runaway generation, not a
+        # successfully completed utterance.
+        token_limit_duration = max_new_tokens / 12.5
+        if duration >= token_limit_duration - 0.35:
+            return False
+
+        if str(language).lower() == "chinese":
+            spoken_units = sum(char.isalnum() for char in str(text))
+            minimum = max(0.5, spoken_units / 8.0)
+            maximum = max(4.0, spoken_units / 1.5 + 2.0)
+            if not minimum <= duration <= maximum:
+                return False
+        return True
+
     @staticmethod
     def _clone_max_new_tokens(text: str) -> int:
         """Choose a bounded codec budget for one utterance.
@@ -112,10 +144,11 @@ class ModelManager:
             # made unrelated batch lines all end at the same duration.
             # Keep the model's documented default ceiling so generation can
             # finish naturally instead of being truncated by this wrapper.
+            max_new_tokens = self._clone_max_new_tokens(text)
             kwargs: dict[str, Any] = {
                 "text": text,
                 "language": language,
-                "max_new_tokens": self._clone_max_new_tokens(text),
+                "max_new_tokens": max_new_tokens,
                 # The Base model's streaming-style prompt layout can cause
                 # severe speaking-rate drift for regular batch text. Batch
                 # synthesis is a complete utterance, so use the stable
@@ -132,12 +165,18 @@ class ModelManager:
                 )
             last_waveform: Any = None
             sample_rate: int | None = None
-            for _ in range(3):
+            for _ in range(5):
                 wavs, sample_rate = model.generate_voice_clone(**kwargs)
                 last_waveform = wavs[0]
-                if self._audio_is_usable(last_waveform):
+                if self._clone_audio_is_usable(
+                    last_waveform,
+                    sample_rate,
+                    text,
+                    language,
+                    max_new_tokens,
+                ):
                     return last_waveform, sample_rate
-            raise RuntimeError("模型连续生成了近静音音频，请重试")
+            raise RuntimeError("模型连续生成了过短、近静音或未正常结束的音频，请重试")
 
     def create_prompt(
         self,
