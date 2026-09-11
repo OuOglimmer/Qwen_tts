@@ -80,10 +80,15 @@ class ModelManager:
     ) -> tuple[Any, int]:
         with self._lock:
             model = self.load("base")
+            # Qwen3-TTS uses a 12 Hz codec. 1024 tokens hard-caps every
+            # sufficiently long utterance at roughly 81.8 seconds, which
+            # made unrelated batch lines all end at the same duration.
+            # Keep the model's documented default ceiling so generation can
+            # finish naturally instead of being truncated by this wrapper.
             kwargs: dict[str, Any] = {
                 "text": text,
                 "language": language,
-                "max_new_tokens": 1024,
+                "max_new_tokens": 2048,
             }
             if prompt_items is not None:
                 kwargs["voice_clone_prompt"] = prompt_items
