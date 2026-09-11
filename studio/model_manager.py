@@ -16,6 +16,20 @@ from .config import MODEL_PATHS
 class ModelManager:
     """Own exactly one GPU model and serialize every inference call."""
 
+    @staticmethod
+    def _clone_max_new_tokens(text: str) -> int:
+        """Choose a bounded codec budget for one utterance.
+
+        Qwen3-TTS emits 12 codec tokens per second.  A fixed budget either
+        truncates long lines (the former 1024-token/81.8-second cap) or lets
+        short lines run for several minutes when the model does not emit EOS.
+        This text-length estimate leaves headroom for pauses while keeping a
+        runaway request bounded.
+        """
+        units = len("".join(str(text or "").split()))
+        estimated = 96 + units * 6
+        return max(128, min(2048, estimated))
+
     def __init__(self) -> None:
         self._lock = threading.RLock()
         self._model: Qwen3TTSModel | None = None
@@ -88,7 +102,12 @@ class ModelManager:
             kwargs: dict[str, Any] = {
                 "text": text,
                 "language": language,
-                "max_new_tokens": 2048,
+                "max_new_tokens": self._clone_max_new_tokens(text),
+                # The Base model's streaming-style prompt layout can cause
+                # severe speaking-rate drift for regular batch text. Batch
+                # synthesis is a complete utterance, so use the stable
+                # non-streaming layout explicitly.
+                "non_streaming_mode": True,
             }
             if prompt_items is not None:
                 kwargs["voice_clone_prompt"] = prompt_items
