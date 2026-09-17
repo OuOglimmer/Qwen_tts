@@ -741,9 +741,19 @@ class StudioService:
         )
         return [(f"{row['name']} · {row['source']}", row["id"]) for row in voices]
 
-    def generate_with_voice(self, voice_id: str, text: str, language: str, destination: Path) -> str:
+    def generate_with_voice(
+        self,
+        voice_id: str,
+        text: str,
+        language: str,
+        destination: Path,
+        project_id: str | None = None,
+    ) -> str:
         # Existing batch items may intentionally reference a replaced voice.
-        voice = self.db.fetch_one("SELECT * FROM voices WHERE id=?", (voice_id,))
+        voice = self.db.fetch_one(
+            "SELECT * FROM voices WHERE id=?" + (" AND project_id=?" if project_id else ""),
+            (voice_id, project_id) if project_id else (voice_id,),
+        )
         if not voice:
             raise ValueError("声线不存在")
         metadata_path = Path(voice["prompt_path"]).parent / "metadata.json"
@@ -825,8 +835,83 @@ class StudioService:
         )
         return item
 
+    def delete_batch_items(self, project_id: str, positions: list[int]) -> list[dict[str, Any]]:
+        """Delete several text tasks while keeping already-written audio files."""
+        clean_positions = sorted({int(position) for position in positions if int(position) > 0})
+        if not project_id or not clean_positions:
+            raise ValueError("请先输入要删除的任务序号")
+        placeholders = ",".join("?" for _ in clean_positions)
+        rows = self.db.fetch_all(
+            f"""
+            SELECT b.*,v.name AS voice_name
+            FROM batch_items b JOIN voices v ON v.id=b.voice_id
+            WHERE b.project_id=? AND b.position IN ({placeholders})
+            ORDER BY b.position
+            """,
+            (project_id, *clean_positions),
+        )
+        found = {int(row["position"]) for row in rows}
+        missing = [position for position in clean_positions if position not in found]
+        if missing:
+            raise ValueError(f"任务序号不存在：{', '.join(str(item) for item in missing)}")
+        running = [int(row["position"]) for row in rows if row["status"] == "running"]
+        if running:
+            raise ValueError(f"任务正在生成，暂不能删除：{', '.join(str(item) for item in running)}")
+
+        self.db.backup_snapshot("pre-delete-batch-items")
+        ids = [(row["id"],) for row in rows]
+        self.db.executemany("DELETE FROM batch_items WHERE id=?", ids)
+        self._write_manifest(project_id)
+        self.db.log_activity(
+            project_id,
+            "batch",
+            None,
+            "批量删除文本任务",
+            f"删除 {len(rows)} 条：{', '.join(str(item) for item in clean_positions)}",
+        )
+        return rows
+
     def clear_pending_batch(self, project_id: str) -> None:
         self.db.execute("DELETE FROM batch_items WHERE project_id=? AND status IN ('pending','failed')", (project_id,))
+
+    def delete_voice_asset(self, project_id: str, voice_id: str) -> str:
+        """Delete one active project voice asset without deleting generated outputs."""
+        voice = self.db.fetch_one(
+            "SELECT * FROM voices WHERE id=? AND project_id=? AND status='active'",
+            (voice_id, project_id),
+        )
+        if not voice:
+            raise ValueError("请选择当前项目中的有效声线资产")
+        linked = self.db.fetch_one(
+            "SELECT COUNT(*) AS total FROM batch_items WHERE project_id=? AND voice_id=?",
+            (project_id, voice_id),
+        )
+        if int(linked["total"]):
+            raise ValueError("该声线仍绑定了批量任务，请先批量删除这些文本任务")
+
+        self.db.backup_snapshot(f"pre-delete-voice-{safe_filename(voice['name'], 'voice')}")
+        request_rows = self.db.fetch_all(
+            "SELECT id FROM voice_requests WHERE project_id=? AND voice_id=?",
+            (project_id, voice_id),
+        )
+        for request in request_rows:
+            selected = self.db.fetch_one(
+                "SELECT 1 FROM candidates WHERE request_id=? AND selected=1 LIMIT 1",
+                (request["id"],),
+            )
+            next_status = "selected" if selected else "candidate"
+            self.db.execute(
+                "UPDATE voice_requests SET voice_id=NULL,status=?,updated_at=? WHERE id=?",
+                (next_status, utc_now(), request["id"]),
+            )
+        self.db.execute("DELETE FROM voices WHERE id=? AND project_id=?", (voice_id, project_id))
+        self.db.log_activity(project_id, "voice", voice_id, "删除声线资产", voice["name"])
+
+        voice_dir = Path(voice["reference_wav"]).resolve().parent
+        voices_root = VOICE_DIR.resolve()
+        if voice_dir.parent == voices_root and voice_dir.name == voice_id and voice_dir.exists():
+            shutil.rmtree(voice_dir)
+        return voice["name"]
 
     def save_batch_edits(self, project_id: str, rows: list[list[Any]]) -> int:
         allowed_languages = {
@@ -879,7 +964,10 @@ class StudioService:
         for item in items:
             if self._batch_cancel.is_set():
                 break
-            voice = self.db.fetch_one("SELECT * FROM voices WHERE id=?", (item["voice_id"],))
+            voice = self.db.fetch_one(
+                "SELECT * FROM voices WHERE id=? AND project_id=?",
+                (item["voice_id"], project_id),
+            )
             if not voice:
                 self.db.execute(
                     "UPDATE batch_items SET status='failed',error=?,updated_at=? WHERE id=?",
@@ -895,7 +983,8 @@ class StudioService:
             stem = f"{int(item['position']):04d}_{safe_filename(voice['name'], 'voice')}"
             try:
                 mp3_path = self.generate_with_voice(
-                    item["voice_id"], item["text"], item["language"], voice_dir / stem
+                    item["voice_id"], item["text"], item["language"], voice_dir / stem,
+                    project_id=project_id,
                 )
                 self.db.execute(
                     "UPDATE batch_items SET status='completed',output_mp3=?,error=NULL,updated_at=? WHERE id=?",
@@ -927,9 +1016,9 @@ class StudioService:
             """
             SELECT b.*,v.name AS voice_name
             FROM batch_items b JOIN voices v ON v.id=b.voice_id
-            WHERE b.id=? AND b.project_id=?
+            WHERE b.id=? AND b.project_id=? AND v.project_id=?
             """,
-            (item_id, project_id),
+            (item_id, project_id, project_id),
         )
         if not item:
             raise ValueError("该批量任务不存在")
@@ -953,7 +1042,10 @@ class StudioService:
             (utc_now(), item_id),
         )
         try:
-            mp3_path = self.generate_with_voice(item["voice_id"], clean_text, language, voice_dir / stem)
+            mp3_path = self.generate_with_voice(
+                item["voice_id"], clean_text, language, voice_dir / stem,
+                project_id=project_id,
+            )
         except Exception as exc:
             BATCH_LOGGER.exception(
                 "regeneration_failed project=%s item=%s position=%s",

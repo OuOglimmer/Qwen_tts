@@ -350,6 +350,7 @@ def sync_project_contexts(project_id: str | None):
         project_rows(project_id),
         library_rows(project_id),
         voice_dropdown(project_id),
+        batch_voice_selector(project_id),
     )
 
 
@@ -737,6 +738,7 @@ def upload_and_archive(project_id, name, audio, ref_text, language, xvec, previe
             library_rows(project_id),
             voice_dropdown(project_id, voice_id),
             batch_voice_selector(project_id, voice_id),
+            batch_voice_selector(project_id, voice_id),
         )
     except Exception as exc:
         return (
@@ -745,18 +747,55 @@ def upload_and_archive(project_id, name, audio, ref_text, language, xvec, previe
             library_rows(project_id),
             voice_dropdown(project_id),
             batch_voice_selector(project_id),
+            batch_voice_selector(project_id),
         )
 
 
-def generate_library_voice(voice_id: str, text: str, language: str):
+def generate_library_voice(project_id: str, voice_id: str, text: str, language: str):
     try:
-        if not voice_id or not text.strip():
+        if not project_id or not voice_id or not text.strip():
             raise ValueError("请选择声线并填写文本")
+        voice = database.fetch_one(
+            "SELECT id FROM voices WHERE id=? AND project_id=? AND status='active'",
+            (voice_id, project_id),
+        )
+        if not voice:
+            raise ValueError("当前项目不包含该声线，请刷新后重新选择")
         output = TEMP_DIR / "single" / service.db.new_id() / "output"
-        mp3 = service.generate_with_voice(voice_id, text, language, output)
+        mp3 = service.generate_with_voice(voice_id, text, language, output, project_id=project_id)
         return mp3, "生成完成。"
     except Exception as exc:
         return None, f"{type(exc).__name__}: {exc}"
+
+
+def delete_library_voice(project_id: str, voice_id: str, confirmation: str):
+    try:
+        voice = database.fetch_one(
+            "SELECT name FROM voices WHERE id=? AND project_id=?",
+            (voice_id, project_id),
+        )
+        if not voice:
+            raise ValueError("请选择当前项目中的声线资产")
+        if str(confirmation or "").strip() != voice["name"]:
+            raise ValueError(f"请输入声线名称“{voice['name']}”确认删除")
+        name = service.delete_voice_asset(project_id, voice_id)
+        return (
+            f"已删除声线资产“{name}”。已有批量音频文件未删除。",
+            library_rows(project_id),
+            voice_dropdown(project_id),
+            batch_voice_selector(project_id),
+            batch_voice_selector(project_id),
+            "",
+        )
+    except Exception as exc:
+        return (
+            f"{type(exc).__name__}: {exc}",
+            library_rows(project_id),
+            voice_dropdown(project_id, voice_id),
+            batch_voice_selector(project_id),
+            batch_voice_selector(project_id, voice_id),
+            confirmation,
+        )
 
 
 def batch_rows(project_id: str) -> list[list[Any]]:
@@ -879,6 +918,42 @@ def delete_selected_batch_task(project_id: str, position: int | None):
             database.new_id(),
             f"当前展示 **{len(records)}** 条已有结果。",
             position,
+        )
+
+
+def delete_batch_tasks(project_id: str, positions_text: str):
+    try:
+        raw = str(positions_text or "").replace("，", ",").replace("、", ",")
+        positions: set[int] = set()
+        for token in raw.split(","):
+            item = token.strip()
+            if not item:
+                continue
+            if "-" in item:
+                start_text, end_text = item.split("-", 1)
+                start, end = int(start_text.strip()), int(end_text.strip())
+                if start <= 0 or end < start or end - start > 5000:
+                    raise ValueError("批量序号范围无效（单次最多 5000 条）")
+                positions.update(range(start, end + 1))
+            else:
+                positions.add(int(item))
+        deleted = service.delete_batch_items(project_id, sorted(positions))
+        records = batch_result_records(project_id)
+        return (
+            batch_rows(project_id),
+            f"已删除 {len(deleted)} 条文本任务；磁盘上的已有音频文件未删除。",
+            database.new_id(),
+            f"当前展示 **{len(records)}** 条已有结果。",
+            "",
+        )
+    except Exception as exc:
+        records = batch_result_records(project_id)
+        return (
+            batch_rows(project_id),
+            f"{type(exc).__name__}: {exc}",
+            database.new_id(),
+            f"当前展示 **{len(records)}** 条已有结果。",
+            positions_text,
         )
 
 
@@ -1473,6 +1548,13 @@ def build_app() -> gr.Blocks:
                             with gr.Row():
                                 cancel_batch_btn = gr.Button("取消当前任务", variant="stop")
                                 delete_batch_btn = gr.Button("删除选中任务", variant="stop")
+                            with gr.Row():
+                                batch_delete_positions = gr.Textbox(
+                                    label="批量删除序号",
+                                    placeholder="例如：1,2,3 或 10-20",
+                                    scale=3,
+                                )
+                                delete_batch_many_btn = gr.Button("批量删除任务", variant="stop", scale=1)
                         selected_batch_position = gr.State()
                         batch_status = gr.Markdown()
                     with gr.Column(scale=5):
@@ -1753,6 +1835,11 @@ def build_app() -> gr.Blocks:
                         library_language = gr.Dropdown(label="语言", choices=LANGUAGES, value="Chinese")
                         library_text = gr.Textbox(label="文本", lines=5)
                         library_generate_btn = gr.Button("生成 128kbps MP3", variant="primary")
+                        library_delete_confirmation = gr.Textbox(
+                            label="删除资产确认（输入完整声线名称）",
+                            placeholder="删除前请输入上方选中的声线名称",
+                        )
+                        library_delete_btn = gr.Button("删除当前声线资产", variant="stop")
                     with gr.Column(scale=3):
                         library_audio = gr.Audio(label="输出", type="filepath", elem_id="library-audio")
                         library_status = gr.Markdown()
@@ -2056,6 +2143,7 @@ def build_app() -> gr.Blocks:
                 project_table,
                 library_table,
                 library_voice,
+                dubbing_voice,
             ],
             queue=False,
         )
@@ -2108,6 +2196,18 @@ def build_app() -> gr.Blocks:
                 batch_results_revision,
                 batch_result_count,
                 selected_batch_position,
+            ],
+            queue=False,
+        )
+        delete_batch_many_btn.click(
+            delete_batch_tasks,
+            inputs=[project_select, batch_delete_positions],
+            outputs=[
+                batch_table,
+                batch_status,
+                batch_results_revision,
+                batch_result_count,
+                batch_delete_positions,
             ],
             queue=False,
         )
@@ -2211,13 +2311,26 @@ def build_app() -> gr.Blocks:
         )
         library_generate_btn.click(
             generate_library_voice,
-            inputs=[library_voice, library_text, library_language],
+            inputs=[library_project, library_voice, library_text, library_language],
             outputs=[library_audio, library_status],
         )
         upload_btn.click(
             upload_and_archive,
             inputs=[upload_project, upload_name, upload_audio, upload_ref_text, upload_language, upload_xvec, upload_preview_text, upload_tags, upload_notes],
-            outputs=[upload_preview, upload_status, library_table, library_voice, batch_voice],
+            outputs=[upload_preview, upload_status, library_table, library_voice, batch_voice, dubbing_voice],
+        )
+        library_delete_btn.click(
+            delete_library_voice,
+            inputs=[library_project, library_voice, library_delete_confirmation],
+            outputs=[
+                library_status,
+                library_table,
+                library_voice,
+                batch_voice,
+                dubbing_voice,
+                library_delete_confirmation,
+            ],
+            queue=False,
         )
         design_btn.click(
             standalone_design,
