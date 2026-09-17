@@ -1947,8 +1947,7 @@ def build_app() -> gr.Blocks:
             inputs=[project_select],
             outputs=[project_select, library_project, upload_project, project_table],
             queue=False,
-        )
-        refresh_project_btn.click(
+        ).then(
             switch_project,
             inputs=[project_select],
             outputs=[
@@ -2370,20 +2369,20 @@ def build_app() -> gr.Blocks:
                 queue=False,
             )
 
-        app.load(
+        project_load = app.load(
             refresh_projects_on_load,
             outputs=[project_select, library_project, upload_project, project_table],
             queue=False,
             show_progress="hidden",
         )
-        app.load(
+        project_load = project_load.then(
             project_summary_text,
             inputs=[project_select],
             outputs=[sidebar_project_summary],
             queue=False,
             show_progress="hidden",
         )
-        app.load(
+        project_load = project_load.then(
             switch_project,
             inputs=[project_select],
             outputs=[
@@ -2396,14 +2395,14 @@ def build_app() -> gr.Blocks:
             queue=False,
             show_progress="hidden",
         )
-        app.load(
+        project_load = project_load.then(
             clear_batch_results,
             inputs=[project_select],
             outputs=[batch_results_project, batch_results_revision, batch_result_count],
             queue=False,
             show_progress="hidden",
         )
-        app.load(
+        project_load.then(
             load_batch_export,
             inputs=[project_select],
             outputs=[batch_export_dir, batch_excerpt_length, batch_archive_file, batch_export_status],
