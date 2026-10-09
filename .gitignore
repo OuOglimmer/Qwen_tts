@@ -45,3 +45,9 @@ node_modules/
 Thumbs.db
 .idea/
 .vscode/
+
+# Next.js build output and generated files
+.next/
+next-env.d.ts
+tsconfig.tsbuildinfo
+.vercel/
