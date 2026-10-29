@@ -1,8 +1,9 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { Button } from './Button'
+import { Modal } from './Modal'
 
 export type ConfirmOptions = {
   title: string
@@ -21,28 +22,17 @@ export function ConfirmDialog({ open, title, message, confirmText = '确定', ca
   onConfirm: () => void
   onCancel: () => void
 }) {
-  useEffect(() => {
-    if (!open) return
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onCancel()
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [open, onCancel])
-
   if (!open) return null
-  return <div className="dialog-overlay" role="presentation" onClick={onCancel}>
-    <div className="dialog-card" role="dialog" aria-modal="true" aria-label={title} onClick={(event) => event.stopPropagation()}>
-      <h3>{title}</h3>
-      <div className="dialog-message">{message}</div>
-      <div className="dialog-actions">
-        <Button onClick={onCancel}>{cancelText}</Button>
-        {danger
-          ? <Button danger onClick={onConfirm}>{confirmText}</Button>
-          : <Button primary onClick={onConfirm}>{confirmText}</Button>}
-      </div>
-    </div>
-  </div>
+  return <Modal
+    title={title}
+    onClose={onCancel}
+    actions={<>
+      <Button onClick={onCancel}>{cancelText}</Button>
+      {danger
+        ? <Button danger onClick={onConfirm}>{confirmText}</Button>
+        : <Button primary onClick={onConfirm}>{confirmText}</Button>}
+    </>}
+  >{message}</Modal>
 }
 
 /** window.confirm 的应用内替代：`if (!(await confirm({ title, message }))) return`，true=确认。

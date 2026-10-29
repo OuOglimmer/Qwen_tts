@@ -23,4 +23,4 @@ foreach ($directory in @("data", "data\voices", "data\projects", "data\temp", "o
 Write-Host "Python environment is ready: $venvPython" -ForegroundColor Green
 Write-Host "Model snapshots are not downloaded automatically." -ForegroundColor Yellow
 Write-Host "Run: .venv\Scripts\python.exe scripts\download_models.py"
-Write-Host "Then start: start_studio.cmd"
+Write-Host "Then start: start_studio.cmd  (backend API :7871 + frontend :3000)"

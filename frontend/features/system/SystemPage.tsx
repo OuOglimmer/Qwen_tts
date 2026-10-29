@@ -36,7 +36,6 @@ export default function SystemPage() {
       <div><span>GPU</span><strong>{status?.model.gpu ?? '—'}</strong></div>
       <div><span>显存占用 (GiB)</span><strong>{status?.model.allocated_gib ?? '—'}</strong></div>
       <div><span>项目数量</span><strong>{status?.projects ?? '—'}</strong></div>
-      <div style={{ gridColumn: '1 / -1' }}><span>数据目录</span><strong style={{ fontSize: 13, wordBreak: 'break-all' }}>{status?.data_dir ?? '—'}</strong></div>
     </div>
   </>
 }

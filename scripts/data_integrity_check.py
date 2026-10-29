@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from studio.database import Database
 from studio.model_manager import ModelManager
-from studio.services import StudioService
+from studio.service import StudioService
 
 
 def main() -> int:

@@ -42,10 +42,12 @@ export function ConvertTool({ notify }: { notify: Notify }) {
     </div>
     <div className="download-box">
       <Label>♫ 输出预览</Label>
+      {/* 多文件结果必须挂显式类名：裸 div 会继承 globals 给 .download-box>div 的
+          grid + place-items:center，整块被收缩成一条窄条，里面的 wide 播放器跟着塌成 245px。 */}
       {converted.length === 0
-        ? <div>♧</div>
-        : <div style={{ height: 'auto', padding: 12 }}>
-          {converted.map((file) => <div key={file.name} style={{ marginBottom: 12 }}>
+        ? <div className="output-empty">转换结果会显示在这里</div>
+        : <div className="convert-results">
+          {converted.map((file) => <div className="convert-result" key={file.name}>
             <p className="hint">{file.name}</p>
             <AudioPlayer url={fileUrl(file.url)} wide />
             <a className="btn" href={fileUrl(file.url) ?? '#'} download>下载</a>

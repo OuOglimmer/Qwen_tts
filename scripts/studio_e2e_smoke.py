@@ -15,7 +15,7 @@ if str(ROOT) not in sys.path:
 from studio.database import Database
 from studio.audio import wav_to_mp3
 from studio.model_manager import ModelManager
-from studio.services import StudioService
+from studio.service import StudioService
 
 
 def main() -> None:
@@ -77,7 +77,8 @@ def main() -> None:
     assert len(rows) == 2
     for row in rows:
         output = Path(row["output_mp3"])
-        assert row["status"] == "completed"
+        # 批量产物自动选入成品。
+        assert row["status"] == "selected"
         assert output.is_file() and output.stat().st_size > 0
         assert sf.info(output).duration > 0
         print(f"OK {row['position']}: {output} ({sf.info(output).duration:.2f}s)")

@@ -8,7 +8,7 @@ import { fetchActiveVoices } from '@/lib/voices'
 import type { BatchItem, BatchStatus, LineEdit, Notify, VoiceAsset } from '@/lib/types'
 
 /** 配音任务域：可绑定声线、任务表、后台任务状态与全部操作。 */
-export function useBatch(projectId: string, notify: Notify) {
+export function useBatch(projectId: string, notify: Notify, active: boolean = true) {
   const [voices, setVoices] = useState<VoiceAsset[]>([])
   const [items, setItems] = useState<BatchItem[]>([])
   const [status, setStatus] = useState<BatchStatus | null>(null)
@@ -27,8 +27,8 @@ export function useBatch(projectId: string, notify: Notify) {
     if (!voiceId && activeVoices[0]) setVoiceId(activeVoices[0].id)
   }, [projectId, voiceId])
 
-  const refreshStatus = useCallback(async () => {
-    const next = await apiGet<BatchStatus>(`/api/projects/${projectId}/batch/status`)
+  const refreshStatus = useCallback(async (force = false) => {
+    const next = await apiGet<BatchStatus>(`/api/projects/${projectId}/batch/status`, { force })
     // 运行/计数/任务计数器都没变化时不再 setState，避免闲置时整页每 2.5 秒重渲染。
     const signature = JSON.stringify([next.running, next.counts, next.task])
     const changed = signature !== statusSignature.current
@@ -59,7 +59,8 @@ export function useBatch(projectId: string, notify: Notify) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId])
 
-  usePolling(refreshStatus, 2500)
+  // 实时进度绕开 GET 缓存（force:true），并在页面隐藏（keep-alive 切走）时暂停轮询。
+  usePolling(() => refreshStatus(true), 2500, active)
 
   const setDraft = (position: number, draft: LineEdit) => {
     setDrafts((previous) => ({ ...previous, [position]: draft }))

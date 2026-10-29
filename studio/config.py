@@ -47,6 +47,7 @@ VOICE_DIR = DATA_DIR / "voices"
 PROJECT_DIR = DATA_DIR / "projects"
 TEMP_DIR = DATA_DIR / "temp"
 DB_PATH = DATA_DIR / "app.db"
+GPU_LOCK_PATH = DATA_DIR / "gpu.lock"
 
 MODEL_ROOT = Path(os.getenv("QWEN_TTS_MODEL_ROOT", str(ROOT / "models"))).expanduser()
 MODEL_PATHS = {

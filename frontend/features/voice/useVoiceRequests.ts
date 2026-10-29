@@ -30,10 +30,11 @@ export function useVoiceRequests(projectId: string) {
       names_text: names.join('\n'),
       language,
     })
-    setRequests(result.items)
-    await loadProgress()
+    // 不能直接 setRequests(result.items)：那是数据库原始行，没有 tag_list/tag_ids，
+    // 用它覆盖会让已有的槽位标签列当场变空。统一走 loadRequests 拿带标签的完整行。
+    await loadRequests()
     return result.created
-  }, [projectId, loadProgress])
+  }, [projectId, loadRequests])
 
   return { requests, setRequests, progress, fetchRequests, loadProgress, loadRequests, createSlots }
 }

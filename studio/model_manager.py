@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import atexit
 import gc
 import threading
 from pathlib import Path
@@ -10,7 +11,51 @@ from qwen_tts import Qwen3TTSModel
 from qwen_tts.inference.qwen3_tts_model import VoiceClonePromptItem
 from safetensors.torch import load_file, save_file
 
-from .config import MODEL_PATHS
+from .config import GPU_LOCK_PATH, MODEL_PATHS
+
+
+class CrossProcessGpuLock:
+    """Best-effort guard against two studio processes sharing one 8 GB GPU.
+
+    A held byte-range lock on ``gpu.lock`` means another Qwen TTS process
+    already loaded a model. Loading a second one would overflow VRAM, so the
+    second process refuses instead. The lock is held until process exit.
+    """
+
+    def __init__(self, path: Path) -> None:
+        self._path = path
+        self._handle = None
+
+    def acquire(self) -> None:
+        if self._handle is not None:
+            return
+        try:
+            import msvcrt
+        except ImportError:
+            return  # Non-Windows development hosts: no portable advisory lock.
+        self._path.parent.mkdir(parents=True, exist_ok=True)
+        handle = open(self._path, "a+b")
+        try:
+            msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1)
+        except OSError:
+            handle.close()
+            raise RuntimeError(
+                "另一个 Qwen TTS 进程正在占用 GPU（工作台、API 或独立 Demo 请只运行一个），"
+                "请先关闭其他进程再重试"
+            )
+        self._handle = handle
+
+    def release(self) -> None:
+        if self._handle is None:
+            return
+        try:
+            import msvcrt
+
+            msvcrt.locking(self._handle.fileno(), msvcrt.LK_UNLCK, 1)
+        except (ImportError, OSError):
+            pass
+        self._handle.close()
+        self._handle = None
 
 
 class ModelManager:
@@ -79,6 +124,8 @@ class ModelManager:
         self._lock = threading.RLock()
         self._model: Qwen3TTSModel | None = None
         self._kind: str | None = None
+        self._gpu_lock = CrossProcessGpuLock(GPU_LOCK_PATH)
+        atexit.register(self._gpu_lock.release)
 
     @property
     def kind(self) -> str | None:
@@ -90,6 +137,7 @@ class ModelManager:
         with self._lock:
             if self._model is not None and self._kind == kind:
                 return self._model
+            self._gpu_lock.acquire()
             self.unload()
             path = MODEL_PATHS[kind]
             if not (path / "model.safetensors").exists():

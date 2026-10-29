@@ -9,11 +9,12 @@ from pathlib import Path
 import soundfile as sf
 import torch
 from qwen_tts import Qwen3TTSModel
+from studio.config import MODEL_PATHS
 
 
 ROOT = Path(__file__).resolve().parents[1]
-DESIGN_MODEL = ROOT / "models" / "voice_design_1.7b"
-CLONE_MODEL = ROOT / "models" / "voice_clone_1.7b"
+DESIGN_MODEL = MODEL_PATHS["voice_design"]
+CLONE_MODEL = MODEL_PATHS["base"]
 DESIGN_OUTPUT = ROOT / "outputs" / "voicedesign" / "smoke_design.wav"
 CLONE_OUTPUT = ROOT / "outputs" / "voiceclone" / "smoke_clone.wav"
 REFERENCE_TEXT = "你好，这是声线创建模型的部署测试。"

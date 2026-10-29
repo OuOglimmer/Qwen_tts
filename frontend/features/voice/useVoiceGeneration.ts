@@ -9,6 +9,8 @@ import { writeSeenTask } from './draft'
 type UseVoiceGenerationParams = {
   projectId: string
   notify: Notify
+  /** 所在页面可见时为 true；隐藏（keep-alive 切走）时暂停轮询，避免后台空转。 */
+  active: boolean
   /** 用户当前查看的槽位；任务完成时若用户未手动切走，则自动跳到生成的槽位。 */
   activeRequestId: string | null
   adoptRequest: (requestId: string) => void
@@ -26,7 +28,7 @@ export type GenerateInput = {
 }
 
 /** 候选生成任务的生命周期：启动、取消、常驻轮询与完成提示。 */
-export function useVoiceGeneration({ projectId, notify, activeRequestId, adoptRequest, loadCandidates, loadRequests }: UseVoiceGenerationParams) {
+export function useVoiceGeneration({ projectId, notify, active, activeRequestId, adoptRequest, loadCandidates, loadRequests }: UseVoiceGenerationParams) {
   const [genTask, setGenTask] = useState<VoiceGenTask>(null)
   // 最近一次观察到的生成任务快照，用于识别“未完成 → 完成”跳变，避免重复提示。
   const prevTaskRef = useRef<VoiceGenTask>(null)
@@ -55,8 +57,9 @@ export function useVoiceGeneration({ projectId, notify, activeRequestId, adoptRe
   }
 
   // 常驻轮询：重进页面后也能接上仍在运行的任务并更新进度条。
+  // 实时进度必须绕开 GET 缓存（force），并用 active 在页面隐藏时暂停轮询。
   usePolling(async () => {
-    const next = await apiGet<VoiceGenTask>('/api/voice-generation/status')
+    const next = await apiGet<VoiceGenTask>('/api/voice-generation/status', { force: true })
     if (!next || next.project_id !== projectId) return
     const prev = prevTaskRef.current
     // 签名门控：任务结束后后端仍会一直返回同一份快照，内容没变就不
@@ -75,7 +78,7 @@ export function useVoiceGeneration({ projectId, notify, activeRequestId, adoptRe
       await loadCandidates(next.request_id)
     }
     await loadRequests()
-  }, 1500)
+  }, 1500, active)
 
   return { genTask, genRunning: Boolean(genTask && !genTask.finished), generate, cancelGenerate, observe }
 }

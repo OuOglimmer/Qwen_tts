@@ -50,6 +50,6 @@ export function CloneTool({ notify }: { notify: Notify }) {
       <textarea value={text} onChange={(event) => setText(event.target.value)} />
       <Button primary disabled={busy} onClick={run}>{busy ? '处理中…' : '开始生成'}</Button>
     </div>
-    <OutputBox label="♫ 输出预览" url={fileUrl(resultUrl)} placeholder="♧" />
+    <OutputBox label="♫ 输出预览" url={fileUrl(resultUrl)} />
   </>
 }

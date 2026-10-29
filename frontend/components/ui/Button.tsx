@@ -6,7 +6,7 @@ export function Button({ children, primary = false, small = false, disabled = fa
   small?: boolean
   disabled?: boolean
   selected?: boolean
-  /** 破坏性操作的红色确认按钮（仅确认弹窗使用）。 */
+  /** 破坏性操作（删除/彻底删除）的红色按钮。 */
   danger?: boolean
   /** 悬停提示，用于 ↑↓ 等纯符号按钮。 */
   title?: string

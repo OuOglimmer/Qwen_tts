@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="1024" viewBox="0 0 1440 1024">
+  <defs>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#2b2a24" flood-opacity=".07"/></filter>
+    <style>
+      .ink{fill:#252525;font-family:Inter,Arial,'Microsoft YaHei',sans-serif}.muted{fill:#73736e;font-family:Inter,Arial,'Microsoft YaHei',sans-serif}.subtle{fill:#9a9a93;font-family:Inter,Arial,'Microsoft YaHei',sans-serif}.tiny{font-size:11px}.small{font-size:12px}.body{font-size:13px}.h2{font-size:18px;font-weight:650}.h1{font-size:24px;font-weight:650}.bold{font-weight:650}.card{fill:#fff;stroke:#e5e5e0}.line{stroke:#e5e5e0}.purple{fill:#6f63b6}.purpleText{fill:#53488f}.purpleSoft{fill:#eeecf8}.green{fill:#2f9d68}.greenSoft{fill:#eef8f2}.red{fill:#b5483f}.redSoft{fill:#fbeeed}.amber{fill:#a9761f}.amberSoft{fill:#fbf3e2}
+    </style>
+  </defs>
+  <rect width="1440" height="1024" fill="#f7f7f5"/>
+  <rect width="236" height="1024" fill="#fbfbfa" stroke="#e5e5e0"/>
+  <text x="28" y="42" class="ink body bold">Qwen TTS Voiceover Studio</text><circle cx="18" cy="38" r="4" fill="#6f63b6"/>
+  <rect x="14" y="76" width="208" height="88" rx="12" class="card" filter="url(#shadow)"/>
+  <text x="28" y="100" class="subtle tiny bold">当前项目</text><text x="28" y="126" class="ink body bold">订单管理演示项目</text><text x="28" y="148" class="subtle tiny">12 个订单 · 最近更新 10:42</text>
+  <text x="28" y="206" class="subtle tiny bold">WORKSPACE</text>
+  <rect x="14" y="220" width="208" height="38" rx="8" fill="#eeecf8"/><circle cx="31" cy="239" r="3" fill="#6f63b6"/><text x="45" y="243" class="purpleText body bold">订单列表</text>
+  <circle cx="31" cy="282" r="3" fill="none" stroke="#b4b4ad"/><text x="45" y="286" class="muted body">票卷管理</text>
+  <circle cx="31" cy="325" r="3" fill="none" stroke="#b4b4ad"/><text x="45" y="329" class="muted body">用户管理</text>
+  <circle cx="31" cy="368" r="3" fill="none" stroke="#b4b4ad"/><text x="45" y="372" class="muted body">系统设置</text>
+  <line x1="26" y1="923" x2="210" y2="923" class="line"/><text x="28" y="951" class="subtle tiny">设计稿 v1.0 · 仅供方案评审</text>
+
+  <rect x="236" width="1204" height="53" fill="#ffffff" fill-opacity=".52" stroke="#e5e5e0"/>
+  <circle cx="272" cy="26" r="3" fill="#7da38e"/><text x="284" y="30" class="muted small">系统运行正常</text><text x="1290" y="30" class="subtle small">2026-10-10 10:42</text>
+  <g transform="translate(272,86)">
+    <text x="0" y="0" class="subtle small">订单管理 / 订单详情</text>
+    <text x="0" y="42" class="ink h1">订单详情</text><text x="0" y="69" class="muted body">查看订单基础信息、用户票卷状态和处理记录</text>
+    <rect x="1020" y="18" width="92" height="34" rx="8" fill="#fff" stroke="#d9d9d3"/><text x="1047" y="40" class="muted small bold">返回列表</text>
+    <rect x="1120" y="18" width="110" height="34" rx="8" class="purple"/><text x="1148" y="40" fill="#fff" class="small bold">编辑订单</text>
+  </g>
+
+  <g transform="translate(272,180)">
+    <rect width="1150" height="132" rx="12" class="card" filter="url(#shadow)"/>
+    <rect x="0" y="0" width="6" height="132" rx="3" class="purple"/>
+    <text x="26" y="31" class="subtle tiny bold">订单编号</text><text x="26" y="58" class="ink h2">ORD-20261010-00128</text><text x="26" y="91" class="muted small">创建时间 2026-10-10 09:18:42</text>
+    <line x1="300" y1="23" x2="300" y2="106" class="line"/>
+    <text x="330" y="31" class="subtle tiny bold">订单状态</text><rect x="330" y="43" width="78" height="28" rx="14" class="greenSoft"/><circle cx="347" cy="57" r="4" class="green"/><text x="358" y="61" class="green" font-size="12" font-weight="650">已完成</text><text x="330" y="91" class="muted small">全部票卷处理成功</text>
+    <line x1="570" y1="23" x2="570" y2="106" class="line"/>
+    <text x="600" y="31" class="subtle tiny bold">订单金额</text><text x="600" y="62" class="ink h2">¥ 1,280.00</text><text x="600" y="91" class="muted small">支付方式：微信支付</text>
+    <line x1="825" y1="23" x2="825" y2="106" class="line"/>
+    <text x="855" y="31" class="subtle tiny bold">票卷进度</text><text x="855" y="62" class="ink h2">3 / 3</text><text x="855" y="91" class="muted small">成功 3 · 失败 0</text>
+  </g>
+
+  <g transform="translate(272,336)">
+    <rect width="1150" height="174" rx="12" class="card" filter="url(#shadow)"/>
+    <text x="24" y="31" class="ink h2">用户详情</text><text x="24" y="54" class="muted small">订单关联用户与收货信息</text>
+    <line x1="24" y1="72" x2="1126" y2="72" class="line"/>
+    <text x="24" y="101" class="subtle tiny">用户昵称</text><text x="24" y="124" class="ink body bold">林晓雅</text>
+    <text x="230" y="101" class="subtle tiny">用户 ID</text><text x="230" y="124" class="ink body">U10023891</text>
+    <text x="440" y="101" class="subtle tiny">联系电话</text><text x="440" y="124" class="ink body">138****6281</text>
+    <text x="650" y="101" class="subtle tiny">收货地址</text><text x="650" y="124" class="ink body">上海市浦东新区 · 已脱敏</text>
+    <text x="24" y="153" class="subtle tiny">备注</text><text x="24" y="153" dx="54" class="muted small">用户要求工作日 18:00 前完成处理</text>
+  </g>
+
+  <g transform="translate(272,534)">
+    <rect width="1150" height="392" rx="12" class="card" filter="url(#shadow)"/>
+    <text x="24" y="32" class="ink h2">用户票卷</text><text x="24" y="55" class="muted small">状态编码已转化为可读状态，并与全局状态色保持一致</text>
+    <rect x="900" y="18" width="96" height="28" rx="14" class="greenSoft"/><circle cx="916" cy="32" r="4" class="green"/><text x="927" y="36" class="green tiny bold">成功 3</text>
+    <rect x="1004" y="18" width="96" height="28" rx="14" class="redSoft"/><circle cx="1020" cy="32" r="4" class="red"/><text x="1031" y="36" class="red tiny bold">失败 0</text>
+    <line x1="24" y1="75" x2="1126" y2="75" class="line"/>
+    <rect x="24" y="92" width="1102" height="40" rx="6" fill="#f3f3f1"/>
+    <text x="42" y="117" class="subtle tiny bold">票卷编号</text><text x="246" y="117" class="subtle tiny bold">票卷类型</text><text x="438" y="117" class="subtle tiny bold">原始编码</text><text x="586" y="117" class="subtle tiny bold">展示状态</text><text x="786" y="117" class="subtle tiny bold">更新时间</text><text x="1000" y="117" class="subtle tiny bold">操作</text>
+    <g transform="translate(24,132)">
+      <line x1="0" y1="48" x2="1102" y2="48" class="line"/><line x1="0" y1="96" x2="1102" y2="96" class="line"/><line x1="0" y1="144" x2="1102" y2="144" class="line"/><line x1="0" y1="192" x2="1102" y2="192" class="line"/>
+      <text x="18" y="30" class="ink small">TK-001</text><text x="222" y="30" class="muted small">配音票卷</text><text x="414" y="30" class="subtle small">100</text><rect x="544" y="12" width="64" height="25" rx="12" class="greenSoft"/><circle cx="557" cy="24" r="3" class="green"/><text x="568" y="28" class="green tiny bold">成功</text><text x="762" y="30" class="muted small">10:31:04</text><text x="978" y="30" class="purpleText small">查看记录</text>
+      <text x="18" y="78" class="ink small">TK-002</text><text x="222" y="78" class="muted small">配音票卷</text><text x="414" y="78" class="subtle small">100</text><rect x="544" y="60" width="64" height="25" rx="12" class="greenSoft"/><circle cx="557" cy="72" r="3" class="green"/><text x="568" y="76" class="green tiny bold">成功</text><text x="762" y="78" class="muted small">10:32:18</text><text x="978" y="78" class="purpleText small">查看记录</text>
+      <text x="18" y="126" class="ink small">TK-003</text><text x="222" y="126" class="muted small">配音票卷</text><text x="414" y="126" class="subtle small">100</text><rect x="544" y="108" width="64" height="25" rx="12" class="greenSoft"/><circle cx="557" cy="120" r="3" class="green"/><text x="568" y="124" class="green tiny bold">成功</text><text x="762" y="126" class="muted small">10:33:47</text><text x="978" y="126" class="purpleText small">查看记录</text>
+      <text x="18" y="174" class="ink small">示例：异常票卷</text><text x="222" y="174" class="muted small">保留同一行结构</text><text x="414" y="174" class="subtle small">200</text><rect x="544" y="156" width="64" height="25" rx="12" class="redSoft"/><circle cx="557" cy="168" r="3" class="red"/><text x="568" y="172" class="red tiny bold">失败</text><text x="762" y="174" class="muted small">异常示例</text><rect x="974" y="157" width="122" height="24" rx="6" fill="#fff" stroke="#d9d9d3" stroke-dasharray="4 3"/><text x="988" y="173" class="subtle tiny">锤子入口（预留）</text>
+    </g>
+    <text x="24" y="367" class="subtle tiny">说明：界面展示层根据字典将数字编码映射为具体状态，异常状态使用红色；后续再补充锤子按钮的具体操作面板。</text>
+  </g>
+
+  <g transform="translate(1188,948)"><rect width="234" height="48" rx="10" class="purpleSoft"/><text x="16" y="20" class="purpleText tiny bold">设计要点</text><text x="16" y="37" class="purpleText tiny">信息分组 · 状态可读 · 操作克制</text></g>
+</svg>
