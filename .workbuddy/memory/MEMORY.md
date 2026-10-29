@@ -169,3 +169,11 @@
   bulk-delete guard 抛 `SystemExit(1)` 带走 uvicorn（2026-10-26"删除历史声线"因此全接口 500 并退出）。
   用户双击 `start_studio.cmd` 不受影响。
 - 后端未开 `--reload`，改完要重启；前端 3000，后端 7871。
+- **`.ps1` / `.psd1` / `.cmd` 只写 ASCII**：启动链走 Windows PowerShell 5.1，无 BOM 的 UTF-8 文件按
+  cp936 解码，中文注释会让 `Import-PowerShellDataFile` 报"无法分析为 PowerShell 数据文件"、
+  让 .ps1 报"字符串缺少终止符"。中文说明一律放 .md 或 Python 注释。
+- **模型版本三处必须同步**：`.env`（真正生效）→ `config/models.psd1`（仅环境变量缺失时的兜底，
+  `scripts/common.ps1` 读）→ `scripts/download_models.py` 的 ModelId。当前两侧都是 1.7B
+  （clone=`voice_clone_1.7b` Base，design=`voice_design_1.7b` VoiceDesign），模型目录在 `D:/ouyang/model`。
+  psd1/env 里写绝对路径是允许的，但 `common.ps1` 必须**先判 `IsPathRooted` 再 Join-Path**
+  （Join-Path 对绝对子路径是字面拼接，会拼出 `<repo>\D:\...` 这种假路径）。

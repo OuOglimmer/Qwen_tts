@@ -13,7 +13,11 @@ function Invoke-QwenTtsService {
     $serviceConfig = $settings[$Service]
     $python = Join-Path $projectRoot ".venv/Scripts/python.exe"
     $modelOverride = if ($Service -eq "VoiceClone") { $env:QWEN_TTS_CLONE_MODEL_PATH } else { $env:QWEN_TTS_GENERATION_MODEL_PATH }
-    $modelPath = if ($modelOverride) { [Environment]::ExpandEnvironmentVariables($modelOverride) } else { Join-Path $projectRoot $serviceConfig.ModelPath }
+    $modelPath = if ($modelOverride) { [Environment]::ExpandEnvironmentVariables($modelOverride) } else { $serviceConfig.ModelPath }
+    # Never Join-Path a rooted value: it concatenates literally, so
+    # '<repo>' + 'D:/ouyang/model/x' becomes '<repo>\D:\ouyang\model\x', and the
+    # model.safetensors check below then fails with a misleading "Model is
+    # incomplete or missing". Both the psd1 and the env vars may be absolute.
     if (-not [System.IO.Path]::IsPathRooted($modelPath)) {
         $modelPath = Join-Path $projectRoot $modelPath
     }
